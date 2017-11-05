@@ -1,6 +1,7 @@
-from selmig import *
+# coding: utf-8
 import eigenvalue as eg
-#from scipy.optimize import brentq
+
+from utils.selmig import *
 
 PARAM_NAMES = [
     'n_indiv', 'cost', 'alpha', 'beta', 'migration_rate'

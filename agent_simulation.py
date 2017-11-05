@@ -5,8 +5,8 @@ import numpy as np
 import scipy.stats
 import time
 
-from fitness import calc_ref_fitness, calc_ref_avg_fitness
-from war import calc_winning_prob_matrix
+from utils.fitness import calc_ref_fitness, calc_ref_avg_fitness
+from utils.war import calc_winning_prob_matrix
 
 logging.basicConfig(level=logging.INFO)
 #logging.basicConfig(level=logging.DEBUG)
