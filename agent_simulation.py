@@ -1,14 +1,19 @@
 # coding: utf-8
-from itertools import chain, izip
+from itertools import chain
 import logging
 import numpy as np
+import random
 import scipy.stats
 import time
 
-from utils.fitness import calc_ref_fitness, calc_ref_avg_fitness
-from utils.war import calc_winning_prob_matrix
+from fitness import calc_ref_fitness, calc_ref_avg_fitness
+from war import calc_winning_prob_matrix
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    datefmt='%Y-%m-%d %H:%M:%S'
+)
 #logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
@@ -30,7 +35,7 @@ class Simulation():
         self.pmig = params['migration_rate']
         self.pmut = params['mutation_rate']
         total_indiv = self.n_groups*self.n_indiv
-        self.initial_altruist_freq = float(self.n_altruists)/total_indiv
+        self.initial_altruist_freq = self.n_altruists/total_indiv
         self.altruists_freq = []
         self.alts_per_group = self.init_alts_per_group()
         self.ref_fitness_values = calc_ref_fitness(self.cost, self.n_indiv)
@@ -41,7 +46,7 @@ class Simulation():
     def init_alts_per_group(self):
         total_indiv = self.n_groups*self.n_indiv
         idx = np.random.choice(total_indiv, self.n_altruists, replace=False)
-        with_altruists = idx/self.n_indiv
+        with_altruists = idx//self.n_indiv
 
         alts_count = np.bincount(with_altruists)
         extra_zeros = np.zeros(self.n_groups-len(alts_count))
@@ -52,19 +57,20 @@ class Simulation():
     def calc_distribution_alts(self):
         self.alts_distrib = np.zeros((self.n_groups, self.n_indiv))
         pos_array = np.arange(self.n_indiv)
-        alts_pos = (np.random.sample(pos_array, n_alts) for n_alts in self.alts_per_group)
+        alts_pos = [np.random.choice(pos_array, n_alts, replace=False) \
+                    for n_alts in self.alts_per_group]
         for i, list_positions in enumerate(alts_pos):
             self.alts_distrib[i][list_positions] = 1
 
 
     def run(self, max_iter=5000, precision=0.01):
         total_indiv = self.n_groups*self.n_indiv
-        prev_freq = float(self.n_altruists)/total_indiv
+        prev_freq = self.n_altruists/total_indiv
         stop_crit = lambda x: (x > 0.9) if self.initial_altruist_freq < 0.5 \
             else (x < 0.1)
 
         # For each period, there's war, reproduction, mutation and migration
-        for it in xrange(1, max_iter+1):
+        for it in range(1, max_iter+1):
             self.altruists_freq.append(prev_freq)
             if stop_crit(prev_freq):
                 break
@@ -77,7 +83,7 @@ class Simulation():
             self.calc_mutation()
             logger.debug('migration...')
             self.calc_migration()
-            prev_freq = float(np.sum(np.sum(self.alts_per_group)))/total_indiv
+            prev_freq = np.sum(np.sum(self.alts_per_group))/total_indiv
 
         return prev_freq, it
 
@@ -90,9 +96,9 @@ class Simulation():
             warrior_groups = np.random.binomial(self.n_groups, self.beta)
         perm_idx = np.random.permutation(self.n_groups)
         warrior_groups = warrior_groups if warrior_groups%2==0 else warrior_groups-1
-        warrior_groups_pairs = izip(
-            perm_idx[0: warrior_groups/2],
-            perm_idx[warrior_groups/2: warrior_groups]
+        warrior_groups_pairs = zip(
+            perm_idx[0: warrior_groups//2],
+            perm_idx[warrior_groups//2: warrior_groups]
         )
         for group_pair in warrior_groups_pairs:
             idx1, idx2 = group_pair
@@ -178,7 +184,7 @@ if __name__ == '__main__':
     }
     start = time.clock()
     sim = Simulation(params)
-    print '--> (final altruist frequency, #iterations):', sim.run()
+    print('--> (final altruist frequency, #iterations):', sim.run())
     end = time.clock()
     execution_time = end - start
-    print 'Execution Time: %.4f seconds'%execution_time
+    print('Execution Time: %.4f seconds'%execution_time)
